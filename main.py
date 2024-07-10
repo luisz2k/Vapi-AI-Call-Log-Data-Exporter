@@ -12,6 +12,7 @@ load_dotenv()
 # Environment variables
 VAPI_URL = os.getenv('VAPI_URL')
 ASSISTANT_ID = os.getenv('ASSISTANT_ID')
+INBOUND_ASSISTANT_ID = os.getenv('INBOUND_ASSISTANT_ID')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SERVICE_ACCOUNT_FILE = os.getenv('SERVICE_ACCOUNT_FILE')
@@ -104,14 +105,21 @@ def main():
     calls = fetch_call_logs(VAPI_URL, ASSISTANT_ID, BEARER_TOKEN)
     relevant_calls = filter_relevant_calls(calls)
 
+    inbound_calls = fetch_call_logs(VAPI_URL, INBOUND_ASSISTANT_ID, BEARER_TOKEN)
+    relevant_inbound_calls = filter_relevant_calls(inbound_calls)
+
     # Google Sheets Export
     RANGE_NAME = 'Sheet1!A1:H'  # Adjust based on your needs
+    RANGE_NAME2 = 'Sheet2!A1:H'
 
     # Prepare the data
     values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + relevant_calls
+    values2 = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + relevant_inbound_calls
 
     result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
-    print(f"{result.get('updatedCells')} cells updated.")
+    result2 = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME2, values2)
+    print(f"{result.get('updatedCells')} outbound cells updated.")
+    print(f"{result2.get('updatedCells')} inbound cells updated.")
 
 if __name__ == "__main__":
     main()
