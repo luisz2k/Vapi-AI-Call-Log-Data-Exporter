@@ -17,12 +17,43 @@ SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SERVICE_ACCOUNT_FILE = os.getenv('SERVICE_ACCOUNT_FILE')
 
 # Function to fetch call logs from the Vapi API
+# Instead of using page numbers, the Vapi API uses cursor-based pagination. 
+# We implement this by using the createdAtLt parameter and set it to the createdAt timestamp of the last
+# call in the current batch of requests
 def fetch_call_logs(url, assistant_id, bearer_token):
-    headers = {"Authorization": f"Bearer {bearer_token}"}
-    querystring = {"assistantId": assistant_id}
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    calls = json.loads(response.text)
-    return calls
+    headers = {
+        "Authorization": f"Bearer {bearer_token}"
+    }
+    params = {
+        "assistantId": assistant_id,
+        "limit": 100  # Maximum allowed per request
+    }
+    all_calls = []
+    
+    while True:
+        # Make a GET request to the API with a limit of 100 calls (the max allowed per request)
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        
+        # Parse the JSON response
+        data = response.json()
+
+        # Add the fetched calls to our list
+        all_calls.extend(data)
+        
+        # Check if we've reached the end of the available data
+        # If we receive fewer calls than the limit, it means we're on the last page so we exit the loop
+        if len(data) < params["limit"]:
+            break
+        
+        # Prepare for the next page by updating the createdAtLt parameter
+        # This is how we implement cursor-based pagination
+        # We use the createdAt timestamp of the last call in the current batch
+        # as the starting point for the next request
+        params["createdAtLt"] = data[-1]["createdAt"]
+    
+    print(f"Total calls fetched: {len(all_calls)}")
+    return all_calls
 
 # Function to calculate the duration of a call
 def calculate_duration(start_time, end_time):
