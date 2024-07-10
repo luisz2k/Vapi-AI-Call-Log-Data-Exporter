@@ -64,8 +64,8 @@ def calculate_duration(start_time, end_time):
     return duration
 
 # Function to filter calls that last longer than a specified duration
-def filter_relevant_calls(calls, min_duration=20):
-    relevant_calls = []
+def filter_calls(calls, min_duration=20):
+    filtered_calls = []
     for call in calls:
         if 'startedAt' in call and 'endedAt' in call:
             try:
@@ -73,7 +73,7 @@ def filter_relevant_calls(calls, min_duration=20):
                 if duration > min_duration:
                     phone_number = call.get('customer', {}).get('number', 'N/A')
                     analysis = call.get('analysis', {})
-                    relevant_calls.append([
+                    filtered_calls.append([
                         call['id'],
                         phone_number,
                         duration,
@@ -85,7 +85,7 @@ def filter_relevant_calls(calls, min_duration=20):
                     ])
             except ValueError as e:
                 print(f"Error calculating duration for call {call['id']}: {str(e)}")
-    return relevant_calls
+    return filtered_calls
 
 # Function to update the Google Sheet with call data
 def update_google_sheet(service_account_file, spreadsheet_id, range_name, data):
@@ -102,19 +102,19 @@ def update_google_sheet(service_account_file, spreadsheet_id, range_name, data):
 
 # Main function to fetch call logs, filter them, and update the Google Sheet
 def main():
-    calls = fetch_call_logs(VAPI_URL, ASSISTANT_ID, BEARER_TOKEN)
-    relevant_calls = filter_relevant_calls(calls)
+    outbound_calls = fetch_call_logs(VAPI_URL, ASSISTANT_ID, BEARER_TOKEN)
+    filtered_outbound_calls = filter_calls(outbound_calls)
 
     inbound_calls = fetch_call_logs(VAPI_URL, INBOUND_ASSISTANT_ID, BEARER_TOKEN)
-    relevant_inbound_calls = filter_relevant_calls(inbound_calls)
+    filtered_inbound_calls = filter_calls(inbound_calls)
 
     # Google Sheets Export
     RANGE_NAME = 'Sheet1!A1:H'  # Adjust based on your needs
     RANGE_NAME2 = 'Sheet2!A1:H'
 
     # Prepare the data
-    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + relevant_calls
-    values2 = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + relevant_inbound_calls
+    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_outbound_calls
+    values2 = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_inbound_calls
 
     result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
     result2 = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME2, values2)
