@@ -102,19 +102,19 @@ def update_google_sheet(service_account_file, spreadsheet_id, range_name, data):
 
 # Main function to fetch call logs, filter them, and update the Google Sheet
 def main():
-    outbound_calls = fetch_call_logs(VAPI_URL, ASSISTANT_ID, BEARER_TOKEN)
-    filtered_outbound_calls = filter_calls(outbound_calls)
+    out_calls = fetch_call_logs(VAPI_URL, ASSISTANT_ID, BEARER_TOKEN)
+    filtered_out_calls = filter_calls(out_calls)
 
-    inbound_calls = fetch_call_logs(VAPI_URL, INBOUND_ASSISTANT_ID, BEARER_TOKEN)
-    filtered_inbound_calls = filter_calls(inbound_calls)
+    in_calls = fetch_call_logs(VAPI_URL, INBOUND_ASSISTANT_ID, BEARER_TOKEN)
+    filtered_in_calls = filter_calls(in_calls)
 
     # Adjust if needed: {SheetName}!{Range}
     RANGE_NAME_OUT = 'Sheet1!A1:H'  
     RANGE_NAME_IN = 'Sheet2!A1:H'
 
     # Prepare the data
-    outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_outbound_calls
-    inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_inbound_calls
+    outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_out_calls
+    inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_in_calls
 
     outbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_OUT, outbound_values)
     inbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_IN, inbound_values)
