@@ -90,49 +90,62 @@ def update_google_sheet(service_account_file, spreadsheet_id, range_name, data):
 
     return result
 
+def update_pepfactor_outbound():
+    out_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_OUT_ASSISTANT_ID, BEARER_TOKEN)
+    filtered_out_calls = filter_calls(out_calls)
+    RANGE_NAME_OUT = 'Sheet1!A1:H'
+    outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_out_calls
+    outbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_OUT, outbound_values)
+    print(f"{outbound_result.get('updatedCells')} outbound cells updated.")
+
+def update_pepfactor_inbound():
+    in_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_IN_ASSISTANT_ID, BEARER_TOKEN)
+    filtered_in_calls = filter_calls(in_calls)
+    RANGE_NAME_IN = 'Sheet2!A1:H'
+    inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_in_calls
+    inbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_IN, inbound_values)
+    print(f"{inbound_result.get('updatedCells')} inbound cells updated.")
+
+def update_greycorp_outbound():
+    calls = fetch_call_logs(VAPI_URL, GREYCORP_OUT_ASSISTANT_ID, BEARER_TOKEN)
+    filtered_calls = filter_calls(calls)
+    RANGE_NAME = 'Sheet3!A1:H'
+    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
+    result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
+    print(f"{result.get('updatedCells')} cells updated for GreyCorp outbound calls.")
+
+def update_greycorp_inbound():
+    calls = fetch_call_logs(VAPI_URL, GREYCORP_IN_ASSISTANT_ID, BEARER_TOKEN)
+    filtered_calls = filter_calls(calls)
+    RANGE_NAME = 'Sheet4!A1:H'
+    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
+    result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
+    print(f"{result.get('updatedCells')} cells updated for GreyCorp inbound calls.")
+
 # Main function to fetch call logs, filter them, and update the Google Sheet
-def main(sheet_name):
-    if sheet_name == "pepfactor_outbound":
-        out_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_OUT_ASSISTANT_ID, BEARER_TOKEN)
-        filtered_out_calls = filter_calls(out_calls)
-        RANGE_NAME_OUT = 'Sheet1!A1:H'  # Adjust if needed: {SheetName}!{Range}
-
-        # Prepare the data
-        outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_out_calls
-        outbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_OUT, outbound_values)
-        print(f"{outbound_result.get('updatedCells')} outbound cells updated.")
-
+def main(sheet_name=None):
+    if sheet_name is None:
+        # Update all sheets
+        update_pepfactor_outbound()
+        update_pepfactor_inbound()
+        update_greycorp_outbound()
+        update_greycorp_inbound()
+    elif sheet_name == "pepfactor_outbound":
+        update_pepfactor_outbound()
     elif sheet_name == "pepfactor_inbound":
-        in_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_IN_ASSISTANT_ID, BEARER_TOKEN)
-        filtered_in_calls = filter_calls(in_calls)
-        RANGE_NAME_IN = 'Sheet2!A1:H'
-        inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_in_calls
-        inbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_IN, inbound_values)
-        print(f"{inbound_result.get('updatedCells')} inbound cells updated.")
-
+        update_pepfactor_inbound()
     elif sheet_name == "greycorp_outbound":
-        calls = fetch_call_logs(VAPI_URL, GREYCORP_OUT_ASSISTANT_ID, BEARER_TOKEN)
-        filtered_calls = filter_calls(calls)
-        RANGE_NAME = 'Sheet3!A1:H'
-        values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
-        result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
-        print(f"{result.get('updatedCells')} cells updated for GreyCorp outbound calls.")
-
+        update_greycorp_outbound()
     elif sheet_name == "greycorp_inbound":
-        calls = fetch_call_logs(VAPI_URL, GREYCORP_IN_ASSISTANT_ID, BEARER_TOKEN)
-        filtered_calls = filter_calls(calls)
-        RANGE_NAME = 'Sheet4!A1:H'
-        values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
-        result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
-        print(f"{result.get('updatedCells')} cells updated for GreyCorp inbound calls.")
+        update_greycorp_inbound()
     else:
         print("Invalid sheet name")
         return
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) > 2:
         print("Usage: python main.py <SheetName>")
         sys.exit(1)
 
-    sheet_name = sys.argv[1]
+    sheet_name = sys.argv[1] if len(sys.argv) == 2 else None
     main(sheet_name)
