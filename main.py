@@ -108,18 +108,18 @@ def main():
     inbound_calls = fetch_call_logs(VAPI_URL, INBOUND_ASSISTANT_ID, BEARER_TOKEN)
     filtered_inbound_calls = filter_calls(inbound_calls)
 
-    # Google Sheets Export
-    RANGE_NAME = 'Sheet1!A1:H'  # Adjust based on your needs
-    RANGE_NAME2 = 'Sheet2!A1:H'
+    # Adjust if needed: {SheetName}!{Range}
+    RANGE_NAME_OUT = 'Sheet1!A1:H'  
+    RANGE_NAME_IN = 'Sheet2!A1:H'
 
     # Prepare the data
-    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_outbound_calls
-    values2 = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_inbound_calls
+    outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_outbound_calls
+    inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_inbound_calls
 
-    result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
-    result2 = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME2, values2)
-    print(f"{result.get('updatedCells')} outbound cells updated.")
-    print(f"{result2.get('updatedCells')} inbound cells updated.")
+    outbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_OUT, outbound_values)
+    inbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_IN, inbound_values)
+    print(f"{outbound_result.get('updatedCells')} outbound cells updated.")
+    print(f"{inbound_result.get('updatedCells')} inbound cells updated.")
 
 if __name__ == "__main__":
     main()
