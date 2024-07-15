@@ -21,6 +21,9 @@ SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SERVICE_ACCOUNT_FILE = os.getenv('SERVICE_ACCOUNT_FILE')
 
 # Function to fetch call logs from the Vapi API
+# Instead of using page numbers, the Vapi API uses cursor-based pagination. 
+# We implement this by using the createdAtLt parameter and set it to the createdAt timestamp of the last
+# call in the current batch of requests
 def fetch_call_logs(url, assistant_id, bearer_token):
     headers = {
         "Authorization": f"Bearer {bearer_token}"
@@ -32,15 +35,25 @@ def fetch_call_logs(url, assistant_id, bearer_token):
     all_calls = []
     
     while True:
+        # Make a GET request to the API with a limit of 100 calls (the max allowed per request)
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         
+        # Parse the JSON response
         data = response.json()
+
+        # Add the fetched calls to our list
         all_calls.extend(data)
         
+        # Check if we've reached the end of the available data
+        # If we receive fewer calls than the limit, it means we're on the last page so we exit the loop
         if len(data) < params["limit"]:
             break
         
+        # Prepare for the next page by updating the createdAtLt parameter
+        # This is how we implement cursor-based pagination
+        # We use the createdAt timestamp of the last call in the current batch
+        # as the starting point for the next request
         params["createdAtLt"] = data[-1]["createdAt"]
     
     print(f"Total calls fetched: {len(all_calls)}")
@@ -93,23 +106,23 @@ def update_google_sheet(service_account_file, spreadsheet_id, range_name, data):
 def update_pepfactor_outbound():
     out_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_OUT_ASSISTANT_ID, BEARER_TOKEN)
     filtered_out_calls = filter_calls(out_calls)
-    RANGE_NAME_OUT = 'Sheet1!A1:H'
-    outbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_out_calls
-    outbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_OUT, outbound_values)
-    print(f"{outbound_result.get('updatedCells')} outbound cells updated.")
+    RANGE_NAME = 'pepfactor_outbound!A1:H'  # Adjust if needed: {SheetName}!{Range}
+    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_out_calls
+    result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
+    print(f"{result.get('updatedCells')} cells updated for PepFactor outbound calls.")
 
 def update_pepfactor_inbound():
     in_calls = fetch_call_logs(VAPI_URL, PEPFACTOR_IN_ASSISTANT_ID, BEARER_TOKEN)
     filtered_in_calls = filter_calls(in_calls)
-    RANGE_NAME_IN = 'Sheet2!A1:H'
-    inbound_values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_in_calls
-    inbound_result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME_IN, inbound_values)
-    print(f"{inbound_result.get('updatedCells')} inbound cells updated.")
+    RANGE_NAME = 'pepfactor_inbound!A1:H'
+    values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_in_calls
+    result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
+    print(f"{result.get('updatedCells')} cells updated for PepFactor inbound calls.")
 
 def update_greycorp_outbound():
     calls = fetch_call_logs(VAPI_URL, GREYCORP_OUT_ASSISTANT_ID, BEARER_TOKEN)
     filtered_calls = filter_calls(calls)
-    RANGE_NAME = 'Sheet3!A1:H'
+    RANGE_NAME = 'greycorp_outbound!A1:H'
     values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
     result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
     print(f"{result.get('updatedCells')} cells updated for GreyCorp outbound calls.")
@@ -117,7 +130,7 @@ def update_greycorp_outbound():
 def update_greycorp_inbound():
     calls = fetch_call_logs(VAPI_URL, GREYCORP_IN_ASSISTANT_ID, BEARER_TOKEN)
     filtered_calls = filter_calls(calls)
-    RANGE_NAME = 'Sheet4!A1:H'
+    RANGE_NAME = 'greycorp_inbound!A1:H'
     values = [['ID', 'Phone Number', 'Duration (seconds)', 'Start Time', 'End Time', 'Summary', 'Success Evaluation', 'Transcript']] + filtered_calls
     result = update_google_sheet(SERVICE_ACCOUNT_FILE, SPREADSHEET_ID, RANGE_NAME, values)
     print(f"{result.get('updatedCells')} cells updated for GreyCorp inbound calls.")
