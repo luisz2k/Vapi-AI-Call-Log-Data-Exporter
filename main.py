@@ -20,6 +20,9 @@ BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 SPREADSHEET_ID = os.getenv('SPREADSHEET_ID')
 SERVICE_ACCOUNT_FILE = os.getenv('SERVICE_ACCOUNT_FILE')
 
+# Array of phone numbers to exclude
+EXCLUDE_PHONE_NUMBERS = ["+61430960262", "+16197647586", "+14587773760"]
+
 # Function to fetch call logs from the Vapi API
 # Instead of using page numbers, the Vapi API uses cursor-based pagination. 
 # We implement this by using the createdAtLt parameter and set it to the createdAt timestamp of the last
@@ -73,8 +76,8 @@ def filter_calls(calls, min_duration=20):
         if 'startedAt' in call and 'endedAt' in call:
             try:
                 duration = calculate_duration(call['startedAt'], call['endedAt'])
-                if duration > min_duration:
-                    phone_number = call.get('customer', {}).get('number', 'N/A')
+                phone_number = call.get('customer', {}).get('number', 'N/A')
+                if duration > min_duration and phone_number not in EXCLUDE_PHONE_NUMBERS:
                     analysis = call.get('analysis', {})
                     filtered_calls.append([
                         call['id'],
